@@ -64,6 +64,7 @@ flowchart LR
 | Bekçi | [`web/nabiz.js`](web/nabiz.js) | Bağlantı koparsa, asılı kalırsa ya da veri kesilirse sayfayı yeniler |
 | Açılış animasyonu | [`web/acilis.js`](web/acilis.js) | İlk açılışta yükleme ekranı |
 | Tünel | [`pi/tunel.yml`](pi/tunel.yml) | Cloudflare Tunnel yapılandırması |
+| Güvenlik duvarı | [`pi/guvenlik.nft`](pi/guvenlik.nft) | ws-scrcpy ve konum portlarını yalnız Pi'nin kendisine açar |
 | Servisler | [`systemd/`](systemd/) | Hepsi `systemctl --user` servisi |
 
 ## 📦 Gerekenler
@@ -147,6 +148,16 @@ sudo loginctl enable-linger $USER   # oturum açılmadan da çalışsın
 systemctl --user daemon-reload
 systemctl --user enable --now waydroid-oturum ws-scrcpy ses konum kapi
 ```
+
+> [!IMPORTANT]
+> ws-scrcpy'nin ve konum sunucusunun kendi kimlik doğrulaması yok. Ağdaki herhangi bir cihaz :8000'e bağlanıp Android'i kontrol edebilir. Bu portları yalnız Pi'nin kendisine aç, dışarıya her şey şifre kapısından geçsin:
+>
+> ```bash
+> sudo mkdir -p /etc/nftables.d && sudo cp pi/guvenlik.nft /etc/nftables.d/tesla.nft
+> sudo nft -f /etc/nftables.d/tesla.nft
+> ```
+>
+> Kalıcı olması için `/etc/nftables.conf` içine `include "/etc/nftables.d/tesla.nft"` ekle ve `sudo systemctl enable nftables` çalıştır.
 
 ### 6. Giriş şifresi
 
@@ -233,7 +244,7 @@ systemd/     kullanıcı servisleri
 config/      kanshi, PipeWire, sysctl, Waydroid ve boot ayarları
 ```
 
-[`pi/wifi-duzen.sh`](pi/wifi-duzen.sh), [`pi/guvenlik.nft`](pi/guvenlik.nft), [`pi/bt-esle.sh`](pi/bt-esle.sh) ve [`pi/bt-ses.sh`](pi/bt-ses.sh), Pi'nin araçta durduğu ilk düzenden kalma: Pi kendi "Tesla" Wi-Fi yayınını açıyor, ses Bluetooth ile araca gidiyordu. Tünel düzeninde gerekmiyorlar ama Pi'yi araçta tutmak isteyen için duruyorlar.
+[`pi/guvenlik.nft`](pi/guvenlik.nft) kimlik doğrulamasız portları dışarıya kapatır, mutlaka yükle. [`pi/wifi-duzen.sh`](pi/wifi-duzen.sh), [`pi/bt-esle.sh`](pi/bt-esle.sh) ve [`pi/bt-ses.sh`](pi/bt-ses.sh), Pi'nin araçta durduğu ilk düzenden kalma: Pi kendi "Tesla" Wi-Fi yayınını açıyor, ses Bluetooth ile araca gidiyordu. Tünel düzeninde gerekmiyorlar ama Pi'yi araçta tutmak isteyen için duruyorlar.
 
 ## 🙏 Teşekkür
 

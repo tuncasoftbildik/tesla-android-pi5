@@ -1,10 +1,8 @@
+# Yalnız düz :8000; dışarıya kapı (kapi.js) ve tünel üzerinden açılır.
+# ws-scrcpy tüm arayüzlerde dinler, kimlik doğrulaması yoktur:
+# 8000'i dışarıya kapatmak için pi/guvenlik.nft yükle.
 runGoogTracker: true
 runApplTracker: false
 server:
   - secure: false
     port: 8000
-  - secure: true
-    port: 8443
-    options:
-      certPath: /home/pi/tesla-android/ssl/fullchain.pem
-      keyPath: /home/pi/tesla-android/ssl/privkey.pem
