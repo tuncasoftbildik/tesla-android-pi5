@@ -39,16 +39,8 @@ def saglayicilari_hazirla():
 class Isleyici(BaseHTTPRequestHandler):
     def _cevap(self, kod, govde=b"ok"):
         self.send_response(kod)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
         self.wfile.write(govde)
-
-    def do_OPTIONS(self):
-        self._cevap(204, b"")
-
-    def do_GET(self):
-        self._cevap(200, json.dumps(son).encode())
 
     def do_POST(self):
         if self.path != "/konum":
@@ -72,7 +64,8 @@ class Isleyici(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     threading.Thread(target=saglayicilari_hazirla, daemon=True).start()
-    sunucu = ThreadingHTTPServer(("0.0.0.0", 8444), Isleyici)
+    sunucu = ThreadingHTTPServer(("127.0.0.1", 8444)  # yalnız kapı (kapi.js) erişir
+                                 , Isleyici)
     try:
         bag = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         bag.load_cert_chain(f"{SSL_DIZIN}/fullchain.pem", f"{SSL_DIZIN}/privkey.pem")

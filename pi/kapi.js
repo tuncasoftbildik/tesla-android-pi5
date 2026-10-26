@@ -85,13 +85,13 @@ const sunucu = http.createServer((req, res) => {
     const ip = req.headers['cf-connecting-ip'] || req.socket.remoteAddress;
     if (req.method === 'POST' && req.url === '/giris') {
         if (engelli(ip)) return girisSayfasi(res, 'Çok fazla deneme, 10 dakika bekle.');
+        hataYaz(ip); // denemeyi baştan say: eşzamanlı isteklerle sınır aşılmasın, başarıda silinir
         let govde = '';
         req.on('data', (d) => { govde += d; if (govde.length > 4096) req.destroy(); });
         req.on('end', () => {
             const sifre = new URLSearchParams(govde).get('sifre') || '';
             const ozet = crypto.scryptSync(sifre, ayar.tuz, 64);
             if (!crypto.timingSafeEqual(ozet, Buffer.from(ayar.ozet, 'hex'))) {
-                hataYaz(ip);
                 return girisSayfasi(res, 'Şifre yanlış.');
             }
             hatalar.delete(ip);

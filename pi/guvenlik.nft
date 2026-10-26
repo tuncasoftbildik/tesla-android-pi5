@@ -1,12 +1,18 @@
 #!/usr/sbin/nft -f
-# "Tesla" yayınına bağlananlar (araç) yalnız Pi'ye ulaşsın, internete çıkmasın.
-# Android (waydroid0, 192.168.240.0/24) internete çıkmaya devam eder.
+# ws-scrcpy (:8000) ve konum (:8444) kimlik doğrulamasızdır; yalnız Pi'nin kendisi (kapi.js) erişsin.
+# Ağdaki başka bir cihaz Android'i doğrudan kontrol edemesin.
 table inet tesla_guvenlik {}
 delete table inet tesla_guvenlik
 
 table inet tesla_guvenlik {
+    chain input {
+        type filter hook input priority -5; policy accept;
+        iif "lo" accept
+        tcp dport { 8000, 8443, 8444, 8090, 8091 } counter drop comment "yalniz yerel erisim"
+    }
     chain forward {
         type filter hook forward priority -5; policy accept;
+        # Pi'nin kendi "Tesla" yayınına bağlananlar (araç) internete çıkmasın.
         ip saddr 10.42.0.0/24 ip daddr != 10.42.0.0/24 counter drop comment "yayin istemcisi internete cikmasin"
         ip6 saddr fe80::/10 iifname "wlan0" counter drop comment "yayinda IPv6 yonlendirme yok"
     }
