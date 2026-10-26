@@ -12,7 +12,18 @@
         if (ws.readyState === 0) { bildir("asili"); try { ws.close(); } catch (x) {} yenile(); }
       }, 6000);
       ws.addEventListener("open", function () { clearTimeout(bekci); });
-      ws.addEventListener("message", function () { sonVeri = Date.now(); });
+      ws.addEventListener("message", function () { sonVeri = Date.now(); yoklandi = 0; });
+      // Giden mesajları izle: görüntü ayarı (101) yoklama için saklanır, dokunma (2) zamanı tutulur
+      var gonder = ws.send;
+      ws.send = function (v) {
+        try {
+          var b = v instanceof ArrayBuffer ? new Uint8Array(v) :
+            ArrayBuffer.isView(v) ? new Uint8Array(v.buffer, v.byteOffset, v.byteLength) : null;
+          if (b && b[0] === 101) ayarMesaji = b.slice();
+          else if (b && b[0] === 2) sonDokunma = Date.now();
+        } catch (x) {}
+        return gonder.apply(ws, arguments);
+      };
       ws.addEventListener("close", function (e) {
         clearTimeout(bekci);
         bildir("kapandi&kod=" + e.code);
@@ -39,16 +50,29 @@
     var a = document.querySelector("audio");
     var q = "olay=" + olay + "&n=" + (++sayac) + "&gor=" + document.visibilityState +
       "&ws=" + (ekran ? ekran.readyState : "-") + "&ses=" + (a ? (a.paused ? "dur" : "cal") : "-") +
+      "&sessiz=" + Math.round((Date.now() - sonVeri) / 1000) + "&ayar=" + (ayarMesaji ? ayarMesaji.length : 0) +
       "&vd=" + (typeof VideoDecoder) + "&oy=" + ((location.hash.match(/player=(\w+)/) || [])[1] || "-");
     try { fetch("/nabiz?" + q, { cache: "no-store", credentials: "same-origin" }).catch(function () {}); } catch (x) {}
   }
-  var acilis = Date.now(), sonVeri = 0;
+  var acilis = Date.now(), sonVeri = Date.now(), sonDokunma = 0, ayarMesaji = null, yoklandi = 0;
   setInterval(function () {
     bildir("nabiz");
+    var simdi = Date.now();
     // Sayfa açıldı ama 15 sn'de ekran bağlantısı hiç açılmadıysa yeniden dene
-    if (Date.now() - acilis > 15000 && (!ekran || ekran.readyState !== 1)) { bildir("ekransiz"); yenile(); }
-    // Açık görünüp veri akmayan (yarı ölü) bağlantı: 8 sn veri gelmezse yeniden dene
-    else if (ekran && ekran.readyState === 1 && sonVeri && Date.now() - sonVeri > 8000) { bildir("akissiz"); yenile(); }
+    if (simdi - acilis > 15000 && (!ekran || ekran.readyState !== 1)) { bildir("ekransiz"); yenile(); return; }
+    if (document.visibilityState !== "visible" || !ekran || ekran.readyState !== 1) return;
+    // Sessizlik tek başına ölüm değil: Android ekranı durağanken Waydroid hiç kare göndermiyor (dokunsan bile).
+    // Yoklandı ama 5 sn'de tek kare gelmediyse bağlantı yarı ölü: yeniden yükle.
+    if (yoklandi && simdi - yoklandi > 5000) { bildir("akissiz"); yenile(); return; }
+    // 20 sn sessizlik ya da dokunduktan 3 sn sonra hâlâ kare yoksa yokla:
+    // aynı görüntü ayarını yeniden göndermek kodlayıcıyı baştan başlatır, canlı bağlantıda kare mutlaka gelir.
+    var sessiz = simdi - sonVeri > 20000;
+    var dokunmaYanitsiz = sonDokunma > sonVeri && simdi - sonDokunma > 3000;
+    if (!yoklandi && ayarMesaji && (sessiz || dokunmaYanitsiz)) {
+      yoklandi = simdi;
+      bildir("yokla");
+      try { ekran.send(ayarMesaji); } catch (x) {}
+    }
   }, 2000);
   document.addEventListener("visibilitychange", function () { bildir("gorunum"); });
   var hataSay = 0;
