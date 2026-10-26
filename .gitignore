@@ -1,0 +1,6 @@
+ssl/
+kapi/ayar.json
+*.yedek*
+*.pem
+.cloudflared/
+node_modules/

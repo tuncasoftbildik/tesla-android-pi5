@@ -1,0 +1,13 @@
+#!/usr/sbin/nft -f
+# "Tesla" yayınına bağlananlar (araç) yalnız Pi'ye ulaşsın, internete çıkmasın.
+# Android (waydroid0, 192.168.240.0/24) internete çıkmaya devam eder.
+table inet tesla_guvenlik {}
+delete table inet tesla_guvenlik
+
+table inet tesla_guvenlik {
+    chain forward {
+        type filter hook forward priority -5; policy accept;
+        ip saddr 10.42.0.0/24 ip daddr != 10.42.0.0/24 counter drop comment "yayin istemcisi internete cikmasin"
+        ip6 saddr fe80::/10 iifname "wlan0" counter drop comment "yayinda IPv6 yonlendirme yok"
+    }
+}

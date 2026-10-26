@@ -1,0 +1,6 @@
+# ~/.config/kanshi/config
+# Android ekranı labwc'nin başsız çıkışı NOOP-1'den gelir (pencere = çıkış − 28 px başlık).
+# 1024x768 → Android 1024x740; Pi 5 yazılım kodlayıcısı için en akıcı nokta.
+profile {
+		output NOOP-1 enable mode --custom 1024x768 position 0,0 transform normal
+}
