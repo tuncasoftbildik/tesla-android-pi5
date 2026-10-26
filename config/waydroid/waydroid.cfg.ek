@@ -1,0 +1,6 @@
+# /var/lib/waydroid/waydroid.cfg dosyasının [properties] bölümüne ekle
+# (aynı satırı /var/lib/waydroid/waydroid_base.prop içinde de değiştir).
+# Varsayılan OMX yazılım çözücü minigbm ile takılıyor, YouTube "stuck.bufferfull" verir.
+# 4 = Codec2 (c2.android.*) çözücüleri.
+[properties]
+debug.stagefright.ccodec = 4

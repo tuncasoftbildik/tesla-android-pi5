@@ -1,0 +1,13 @@
+[Unit]
+Description=Tesla Android ağ düzeni: Wi-Fi görev dağılımı + yayın istemcisi internet engeli
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+ExecStartPre=/usr/sbin/nft -f /etc/tesla-android/guvenlik.nft
+ExecStart=/home/pi/tesla-android/wifi-duzen.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

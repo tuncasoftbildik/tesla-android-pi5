@@ -1,0 +1,10 @@
+runGoogTracker: true
+runApplTracker: false
+server:
+  - secure: false
+    port: 8000
+  - secure: true
+    port: 8443
+    options:
+      certPath: /home/pi/tesla-android/ssl/fullchain.pem
+      keyPath: /home/pi/tesla-android/ssl/privkey.pem

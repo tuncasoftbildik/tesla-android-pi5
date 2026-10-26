@@ -1,0 +1,11 @@
+[Unit]
+Description=Cloudflare tüneli: android.example.com -> ws-scrcpy (giriş kapısı arkasında)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/cloudflared --no-autoupdate tunnel --config /home/pi/tesla-android/tunel.yml run
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

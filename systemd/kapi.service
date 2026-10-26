@@ -1,0 +1,11 @@
+[Unit]
+Description=Tesla Android giriş kapısı (127.0.0.1:8090)
+After=ws-scrcpy.service
+
+[Service]
+ExecStart=/usr/bin/node /home/pi/tesla-android/kapi.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

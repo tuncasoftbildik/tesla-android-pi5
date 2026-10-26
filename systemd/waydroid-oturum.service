@@ -1,0 +1,11 @@
+[Unit]
+Description=Waydroid Android oturumu (Tesla ekranı)
+
+[Service]
+ExecStart=/home/pi/tesla-android/waydroid-oturum.sh
+ExecStop=/usr/bin/waydroid session stop
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

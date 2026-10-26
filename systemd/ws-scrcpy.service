@@ -1,0 +1,12 @@
+[Unit]
+Description=ws-scrcpy: Android ekranını tarayıcıya akıt (port 8000)
+After=waydroid-oturum.service
+Wants=waydroid-oturum.service
+
+[Service]
+ExecStart=/home/pi/tesla-android/ws-scrcpy.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

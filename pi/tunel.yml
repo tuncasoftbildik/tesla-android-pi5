@@ -1,0 +1,7 @@
+tunnel: TUNNEL-UUID
+credentials-file: /home/pi/.cloudflared/TUNNEL-UUID.json
+ingress:
+  # Her şey giriş kapısından geçer (şifre + çerez), kapı ws-scrcpy ve konuma dağıtır
+  - hostname: android.example.com
+    service: http://localhost:8090
+  - service: http_status:404

@@ -1,0 +1,10 @@
+[Unit]
+Description=Araca Bluetooth ile bağlan, Android sesini oraya ver
+
+[Service]
+ExecStart=/home/pi/tesla-android/bt-ses.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
