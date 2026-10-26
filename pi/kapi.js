@@ -60,10 +60,23 @@ function hataYaz(ip) {
     if (!k || Date.now() - k.ilk >= 600000) hatalar.set(ip, { sayi: 1, ilk: Date.now() });
     else k.sayi++;
 }
+// Süresi dolan kayıtları at: çok sayıda farklı IP'den deneme belleği şişirmesin
+setInterval(() => {
+    const simdi = Date.now();
+    for (const [ip, k] of hatalar) if (simdi - k.ilk >= 600000) hatalar.delete(ip);
+}, 300000).unref();
+
+// Başka sitenin çerçeveye almasına (clickjacking) ve MIME tahminine karşı her yanıta eklenir
+const GUVENLIK = {
+    'X-Frame-Options': 'DENY',
+    'Content-Security-Policy': "frame-ancestors 'none'",
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'same-origin',
+};
 
 const SABLON = fs.readFileSync(__dirname + '/giris.html', 'utf8');
 function girisSayfasi(res, mesaj) {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.writeHead(200, { ...GUVENLIK, 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(SABLON.replace('{{MESAJ}}', mesaj ? '<p class="hata">' + mesaj + '</p>' : ''));
 }
 
@@ -73,7 +86,7 @@ function vekil(req, res, hedef, tls) {
         headers: req.headers, servername: 'android.example.com', // konum sunucusunun LE sertifikası
     }, (yanit) => {
         // Her açılışta sürüm sorulsun (değişmediyse 304 gelir): güncellemeden sonra araç eski sürümde kalmasın
-        const basliklar = { ...yanit.headers, 'cache-control': 'no-cache' };
+        const basliklar = { ...yanit.headers, ...GUVENLIK, 'cache-control': 'no-cache' };
         res.writeHead(yanit.statusCode, basliklar);
         yanit.pipe(res);
     });
@@ -90,24 +103,27 @@ const sunucu = http.createServer((req, res) => {
         req.on('data', (d) => { govde += d; if (govde.length > 4096) req.destroy(); });
         req.on('end', () => {
             const sifre = new URLSearchParams(govde).get('sifre') || '';
-            const ozet = crypto.scryptSync(sifre, ayar.tuz, 64);
-            if (!crypto.timingSafeEqual(ozet, Buffer.from(ayar.ozet, 'hex'))) {
-                return girisSayfasi(res, 'Şifre yanlış.');
-            }
-            hatalar.delete(ip);
-            const bitis = Math.floor(Date.now() / 1000) + SURE;
-            res.writeHead(303, {
-                'Set-Cookie': `ta=${bitis}.${imza(bitis)}; Max-Age=${SURE}; Path=/; Secure; HttpOnly; SameSite=Lax`,
-                Location: '/',
+            // Asenkron: scrypt iş parçacığı havuzunda koşar, deneme sırasında görüntü/ses akışı donmaz
+            crypto.scrypt(sifre, ayar.tuz, 64, (hata, ozet) => {
+                if (hata || !crypto.timingSafeEqual(ozet, Buffer.from(ayar.ozet, 'hex'))) {
+                    return girisSayfasi(res, 'Şifre yanlış.');
+                }
+                hatalar.delete(ip);
+                const bitis = Math.floor(Date.now() / 1000) + SURE;
+                res.writeHead(303, {
+                    ...GUVENLIK,
+                    'Set-Cookie': `ta=${bitis}.${imza(bitis)}; Max-Age=${SURE}; Path=/; Secure; HttpOnly; SameSite=Lax`,
+                    Location: '/',
+                });
+                res.end();
             });
-            res.end();
         });
         return;
     }
     if (!cerezGecerli(req.headers.cookie)) return girisSayfasi(res);
     if (req.url.startsWith('/nabiz?')) {
         console.log('nabız', req.url.slice(7));
-        res.writeHead(204, { 'Cache-Control': 'no-store' });
+        res.writeHead(204, { ...GUVENLIK, 'Cache-Control': 'no-store' });
         return res.end();
     }
     if (req.url === '/konum') return vekil(req, res, KONUM, true);
@@ -118,6 +134,12 @@ const sunucu = http.createServer((req, res) => {
 sunucu.on('upgrade', (req, soket, bas) => {
     if (!cerezGecerli(req.headers.cookie)) {
         soket.end('HTTP/1.1 401 Unauthorized\r\n\r\n');
+        return;
+    }
+    // Başka bir sayfa çerezle WebSocket açamasın (CSWSH): tarayıcı Origin'i hep gönderir, kendi adresimiz olmalı
+    if (req.headers.origin !== 'https://' + req.headers.host) {
+        console.log('origin reddedildi', req.headers.origin || '-', req.headers.host || '-');
+        soket.end('HTTP/1.1 403 Forbidden\r\n\r\n');
         return;
     }
     const yer = req.url.startsWith('/ses') ? SES : HEDEF;
